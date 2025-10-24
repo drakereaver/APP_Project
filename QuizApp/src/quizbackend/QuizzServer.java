@@ -178,7 +178,6 @@ public class QuizzServer {
                 System.out.println("📨 Received body: " + body);
 
                 JSONObject obj = new JSONObject(body);
-
                 String username = obj.optString("username", "").trim();
                 String email = obj.optString("email", "").trim();
 
@@ -189,19 +188,33 @@ public class QuizzServer {
                     response.put("message", "Username and email cannot be empty.");
                     System.out.println("❌ Empty credentials");
                 } else {
-                    // Check if user exists
                     User user = UserDAO.getUserByUsernameEmail(username, email);
+
                     if (user != null) {
+                        // ✅ Login success
                         response.put("success", true);
                         response.put("username", user.getUsername());
                         response.put("email", user.getEmail());
                         response.put("isAdmin", user.getIsAdmin());
                         response.put("message", "Login successful!");
-                        System.out.println("✅ User logged in: " + username + " (Admin: " + user.getIsAdmin() + ")");
+                        System.out.println("✅ User logged in: " + username);
                     } else {
-                        response.put("success", false);
-                        response.put("message", "User not found. Please check your credentials.");
-                        System.out.println("❌ User not found: " + username);
+                        // 🆕 Auto-register normal user
+                        User newUser = new User(0, username, email, false);
+                        boolean added = UserDAO.addUser(newUser);
+
+                        if (added) {
+                            response.put("success", true);
+                            response.put("username", username);
+                            response.put("email", email);
+                            response.put("isAdmin", false);
+                            response.put("message", "User registered successfully!");
+                            System.out.println("🆕 New user registered: " + username);
+                        } else {
+                            response.put("success", false);
+                            response.put("message", "Failed to register user.");
+                            System.out.println("❌ Failed to register: " + username);
+                        }
                     }
                 }
 
